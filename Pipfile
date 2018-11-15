@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "*"
+grabicon = "*"
+whitenoise = "*"
+djangorestframework = "*"
+gunicorn = "*"
+django-heroku = "*"
+
+[dev-packages]
+pylint = "*"
+v = {version = "*", editable = true}
+
+[requires]
+python_version = "3.6"

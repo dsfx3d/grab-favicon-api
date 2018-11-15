@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block content %}
+
+    <div class="container-fluid h-100" id="favi-app">
+        <div class="row h-100">
+            <div class="d-none d-lg-flex col-lg-3 h-100 bg-dark shadow border-right border-light py-5" style="position: fixed; z-index:0;">
+                
+                <p class="text-light lead px-2 pt-5 my-auto">
+                    <a href="https://en.wikipedia.org/wiki/Favicon" class="text-white" target="blank" data-toggle="tooltip" data-placement="top" title="wiki"><b><u>Favicon</u></b></a> is an icon associated with a particular website, typically displayed in the address bar of a browser accessing the site or next to the site name in a user's list of bookmarks.
+                </p>
+
+            </div>
+
+            <div class="d-lg-none col-12 bg-dark shadow-sm align-items-center py-5">
+                
+                <p class="text-light lead px-2 pt-5">
+                    <a href="https://en.wikipedia.org/wiki/Favicon" class="text-white" target="blank" data-toggle="tooltip" data-placement="top" title="wiki"><b><u>Favicon</u></b></a> is an icon associated with a particular website, typically displayed in the address bar of a browser accessing the site or next to the site name in a user's list of bookmarks.
+                </p>
+
+            </div>
+
+            <div id="main-col" class="col-lg-7 offset-lg-4 col-md-12 pt-5 mt-lg-5 mb-1">
+                <div class="display-4 mx-lg-5 mx-2">api demo</div>
+                <hr>
+                <h5 class="mx-lg-5 mx-2 mt-5 mb-3">
+                    <code>GET</code> <kbd class="shadow-sm">{% url "grab-endpoint" %}</kbd>
+                </h5>
+                <form action="" method="post" @submit.prevent="submitForm">
+                    {% csrf_token %}
+                    <div class="card m-2 shadow-sm mx-lg-4 ">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Enter URL</label>
+                                <input type="text" :class="{ 'form-control': true, border: isError, 'border-danger': isError }" name="url" placeholder="http://example.com/" value="{{ url }}">
+                                <small v-if="error==null" class="form-text text-muted">
+                                    Each favicon attached to this webpage will be grabbed, including apple touch icons
+                                </small>
+                                <small v-else class="form-text text-danger">[[ error ]]</small>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <input type="submit" value="Grab Favicons" class="btn btn-primary" :disabled="loading">
+                        </div>
+                    </div>
+                </form>
+
+                <div v-if="favicons && !loading">
+                    <p class="mt-5 mx-3 d-lg-none">
+                        <code>GET</code> <kbd class="shadow-sm">[[ endpoint ]]</kbd>
+                    </p>
+
+                    <ul class="nav nav-tabs mt-5" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="table-tab" data-toggle="tab" href="#table-pane" role="tab">Table</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="json-tab" data-toggle="tab" href="#json-pane" role="tab">JSON</a>
+                        </li>
+                        <li class="nav-item ml-auto d-none d-lg-block">
+                            <code>GET</code> <kbd class="shadow-sm">[[ endpoint ]]</kbd>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-5">
+                        <div class="tab-pane fade show active" id="table-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-light table-bordered mr-5 shadow-sm">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th scope="col">#</th>
+                                            <th scope="col">Size</th>
+                                            <th scope="col">Address</th>
+                                            <th scope="col">Extension</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="icon in favicons">
+                                            <td><img :src="icon.url" alt="icon" class=""></td>
+                                            <td>[[ icon.size ]] <i>bytes</i> </td>
+                                            <td><a :href="icon.url" target="_blank" rel="noopener noreferrer">[[ icon.url ]]</a></td>
+                                            <td>[[ icon.extension ]]</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="json-pane" role="tabpanel">
+                            <code>
+                                [[ favicons ]]
+                            </code>
+                            
+                        </div>
+                    </div>
+                </div>
+                
+                <div v-if="loading" class="text-center my-5">
+                    <i class="fa fa-refresh fa-spin" style="font-size: 48px"></i>
+                </div>
+
+                <footer v-if="!loading" class="text-center mt-5">
+                    <p class="lead"> @dsfx3d </p>
+                </footer>
+            </div>
+        </div>
+    </div><!-- end container -->
+
+{% endblock content %}
+
+
+
+
+{% block vuescript %}
+<script>
+        new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#favi-app',
+            data() {
+                return {
+                    favicons: null,
+                    loading: false,
+                    error: null,
+                    endpoint: null,
+                }
+            },
+
+            computed: {
+                isError() {
+                    return this.error != null
+                }
+            },
+
+            methods: {
+                submitForm() {
+                    if (this.loading) return
+
+                    this.loading = true
+                    this.error = null
+                    this.favicons = null
+                    
+                    $('input[name=url]').blur()
+                    var csrftoken = $('input[name=csrfmiddlewaretoken').val()
+                    var url = $('input[name=url]').val()
+                    var headers = {
+                        'X-CSRFToken': csrftoken,
+                        'content-type': 'application/x-www-form-urlencoded',
+                    }
+                    
+                    this.endpoint = `{% url "grab-endpoint" %}?url=${url}`
+
+                    this.$http.get(this.endpoint, headers).then(response => {
+                         $('input[type=submit]').focus()
+                        data = response.data
+                        
+                        if (data.error)
+                            this.error = data.error
+                        else
+                            this.favicons = data
+                        
+                        this.loading = false
+                    }, error => {
+                        this.error = "Something went wrong"
+                        this.loading = false
+                    })
+
+                }
+            },
+        })
+</script>
+{% endblock vuescript %}
+
+{% block style %}
+<style>
+        div::-webkit-scrollbar {
+            width: 0em;
+        }
+</style>
+{% endblock style %}
